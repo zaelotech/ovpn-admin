@@ -161,6 +161,13 @@ new Vue({
         class: 'btn-info',
         showWhenStatus: 'Active',
         showForServerRole: ['master', 'slave'],
+        showForModule: ["core"],      },
+      {
+        name: 'u-show-mfa',
+        label: 'Show MFA QR',
+        class: 'btn-success',
+        showWhenStatus: 'Active',
+        showForServerRole: ['master', 'slave'],
         showForModule: ["core"],
       },
       {
@@ -198,6 +205,15 @@ new Vue({
       modalNewUserVisible: false,
       modalShowConfigVisible: false,
       modalShowCcdVisible: false,
+      modalShowMFAVisible: false,
+      mfaData: {
+        username: '',
+        secret: '',
+        qrCode: '',
+        otpAuthUrl: '',
+        configured: false
+      },
+      mfaLoadError: '',
       modalChangePasswordVisible: false,
       modalRotateUserVisible: false,
       modalDeleteUserVisible: false,
@@ -392,7 +408,9 @@ new Vue({
 
       var data = new URLSearchParams();
       data.append('username', _this.u.newUserName);
-      data.append('password', _this.u.newUserPassword);
+      if (_this.u.newUserPassword) {
+        data.append('password', _this.u.newUserPassword);
+      }
 
       _this.username = _this.u.newUserName;
 

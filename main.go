@@ -496,6 +496,34 @@ func (oAdmin *OvpnAdmin) downloadCcdHandler(w http.ResponseWriter, r *http.Reque
 
 var app OpenVPNPKI
 
+
+func (oAdmin *OvpnAdmin) userShowMFAHandler(w http.ResponseWriter, r *http.Request) {
+	log.Info(r.RemoteAddr, " ", r.RequestURI)
+	_ = r.ParseForm()
+	
+	username := r.FormValue("username")
+	
+	if !checkUserExist(username) {
+		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		return
+	}
+	
+	if !hasMFA(username) {
+		http.Error(w, `{"error":"MFA not configured for this user"}`, http.StatusNotFound)
+		return
+	}
+	
+	mfaData, err := getMFAData(username)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	
+	mfaJSON, _ := json.Marshal(mfaData)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%s", mfaJSON)
+}
+
 func main() {
 	kingpin.Version(version)
 	kingpin.Parse()
@@ -581,6 +609,7 @@ func main() {
 	http.HandleFunc(*listenBaseUrl+"api/user/revoke", ovpnAdmin.userRevokeHandler)
 	http.HandleFunc(*listenBaseUrl+"api/user/unrevoke", ovpnAdmin.userUnrevokeHandler)
 	http.HandleFunc(*listenBaseUrl+"api/user/config/show", ovpnAdmin.userShowConfigHandler)
+	http.HandleFunc(*listenBaseUrl+"api/user/mfa", ovpnAdmin.userShowMFAHandler)
 	http.HandleFunc(*listenBaseUrl+"api/user/disconnect", ovpnAdmin.userDisconnectHandler)
 	http.HandleFunc(*listenBaseUrl+"api/user/statistic", ovpnAdmin.userStatisticHandler)
 	http.HandleFunc(*listenBaseUrl+"api/user/ccd", ovpnAdmin.userShowCcdHandler)
@@ -1028,7 +1057,7 @@ func (oAdmin *OvpnAdmin) userCreate(username, password string) (bool, string) {
 		return false, err.Error()
 	}
 
-	if *authByPassword {
+	if *authByPassword && password != "" {
 		if err := validatePassword(password); err != nil {
 			log.Debugf("userCreate: authByPassword(): %s", err.Error())
 			return false, err.Error()
@@ -1045,12 +1074,20 @@ func (oAdmin *OvpnAdmin) userCreate(username, password string) (bool, string) {
 		log.Debug(o)
 	}
 
-	if *authByPassword {
+	if *authByPassword && password != "" {
 		o := runBash(fmt.Sprintf("openvpn-user create --db.path %s --user %s --password %s", *authDatabase, username, password))
 		log.Debug(o)
 	}
 
 	log.Infof("Certificate for user %s issued", username)
+
+	// Gerar MFA automaticamente
+	_, err := createMFAForUser(username)
+	if err != nil {
+		log.Warnf("Failed to create MFA for user %s: %v", username, err)
+	} else {
+		log.Infof("MFA/TOTP configured for user %s", username)
+	}
 
 	//oAdmin.clients = oAdmin.usersList()
 
