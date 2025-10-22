@@ -185,6 +185,49 @@
     </div>
   </div>
 
+  <div class="modal-wrapper" v-if="u.modalShowMFAVisible" v-bind:style="modalShowMFADisplay">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4>MFA/TOTP Configuration for: <strong>{{ username }}</strong></h4>
+        </div>
+        <div class="modal-body">
+          <div v-if="u.mfaLoadError">
+            <div class="alert alert-danger">{{ u.mfaLoadError }}</div>
+          </div>
+          <div v-else-if="u.mfaData.configured">
+            <div class="text-center mb-3">
+              <h5>Scan this QR Code with Google Authenticator or Authy:</h5>
+              <img v-bind:src="'data:image/png;base64,' + u.mfaData.qrCode" alt="MFA QR Code" class="img-fluid" style="max-width: 300px;">
+            </div>
+            <div class="form-group">
+              <label><strong>Secret (manual entry):</strong></label>
+              <div class="input-group">
+                <input type="text" class="form-control" v-bind:value="u.mfaData.secret" readonly>
+                <div class="input-group-append">
+                  <button class="btn btn-outline-secondary" type="button" v-on:click="copyToClipboard(u.mfaData.secret)">
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-info mt-3">
+              <strong>Instructions:</strong>
+              <ol>
+                <li>Scan the QR code with your authenticator app</li>
+                <li>Download your OpenVPN config file</li>
+                <li>When connecting, enter the 6-digit code from your app</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary el-square modal-el-margin" v-on:click.stop="u.modalShowMFAVisible=false">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-wrapper" v-if="u.modalRotateUserVisible" v-bind:style="modalRotateUserDisplay">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">

@@ -275,6 +275,9 @@ new Vue({
         _this.u.openvpnConfig = response.data;
       });
     })
+    _this.$root.$on('u-show-mfa', function () {
+      _this.showMFA();
+    })
     _this.$root.$on('u-download-config', function () {
       var data = new URLSearchParams();
       data.append('username', _this.username);
@@ -336,6 +339,9 @@ new Vue({
     },
     modalShowCcdDisplay: function () {
       return this.u.modalShowCcdVisible ? {display: 'flex'} : {}
+    },
+    modalShowMFADisplay: function () {
+      return this.u.modalShowMFAVisible ? {display: 'flex'} : {}
     },
     modalChangePasswordDisplay: function () {
       return this.u.modalChangePasswordVisible ? {display: 'flex'} : {}
@@ -516,6 +522,39 @@ new Vue({
           _this.u.deleteUserMessage = error.response.data.message;
           _this.$notify({title: 'Deleting user ' + _this.username + ' failed!', type: 'error'})
         })
+    },
+    showMFA: function() {
+      var _this = this;
+      _this.u.mfaLoadError = '';
+      _this.u.mfaData = {
+        username: '',
+        secret: '',
+        qrCode: '',
+        otpAuthUrl: '',
+        configured: false
+      };
+      
+      axios.request(axios_cfg('api/user/mfa?username=' + _this.username))
+        .then(function(response) {
+          _this.u.mfaData = response.data;
+          _this.u.modalShowMFAVisible = true;
+        })
+        .catch(function(error) {
+          _this.u.mfaLoadError = error.response ? error.response.data.error : 'Failed to load MFA data';
+          _this.$notify({title: 'Failed to load MFA for ' + _this.username, type: 'error'});
+        });
+    },
+    copyToClipboard: function(text) {
+      var _this = this;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          _this.$notify({title: 'Secret copied to clipboard!', type: 'success'});
+        }).catch(function() {
+          _this.$notify({title: 'Failed to copy secret', type: 'error'});
+        });
+      } else {
+        _this.$notify({title: 'Clipboard not supported', type: 'warning'});
+      }
     },
   }
 
