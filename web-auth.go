@@ -77,7 +77,7 @@ func validateWebCredentials(username, password string) bool {
 	defer db.Close()
 
 	var storedHash []byte
-	
+
 	// Read user hash from database
 	err = db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte("users"))

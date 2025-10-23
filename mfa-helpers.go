@@ -95,8 +95,8 @@ func getMFAData(username string) (*MFAData, error) {
 	}
 
 	// Gerar OTP Auth URL
-	otpAuthURL := fmt.Sprintf("otpauth://totp/LojaPublica-VPN:%s?secret=%s&issuer=LojaPublica",
-		username, secret)
+	otpAuthURL := fmt.Sprintf("otpauth://totp/%s:%s?secret=%s&issuer=%s",
+		*mfaIssuer, username, secret, *mfaIssuer)
 
 	// Gerar QR Code
 	qrPNG, err := qrcode.Encode(otpAuthURL, qrcode.Medium, 256)

@@ -80,6 +80,7 @@ var (
 	authByPassword           = kingpin.Flag("auth.password", "enable additional password authentication").Default("false").Envar("OVPN_AUTH").Bool()
 	authDatabase             = kingpin.Flag("auth.db", "database path for password authentication").Default("./easyrsa/pki/users.db").Envar("OVPN_AUTH_DB_PATH").String()
 	authDataBaseInit         = kingpin.Flag("auth.db-init", "enable database initialization if db user not exists or size is 0").Default("false").Envar("OVPN_AUTH_DB_INIT").Bool()
+	mfaIssuer                = kingpin.Flag("mfa.issuer", "MFA issuer name for TOTP QR codes").Default("VPN-LojaPublica").Envar("OVPN_MFA_ISSUER").String()
 	logLevel                 = kingpin.Flag("log.level", "set log level: trace, debug, info, warn, error (default info)").Default("info").Envar("LOG_LEVEL").String()
 	logFormat                = kingpin.Flag("log.format", "set log format: text, json (default text)").Default("text").Envar("LOG_FORMAT").String()
 	storageBackend           = kingpin.Flag("storage.backend", "storage backend: filesystem, kubernetes.secrets (default filesystem)").Default("filesystem").Envar("STORAGE_BACKEND").String()
@@ -496,29 +497,28 @@ func (oAdmin *OvpnAdmin) downloadCcdHandler(w http.ResponseWriter, r *http.Reque
 
 var app OpenVPNPKI
 
-
 func (oAdmin *OvpnAdmin) userShowMFAHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info(r.RemoteAddr, " ", r.RequestURI)
 	_ = r.ParseForm()
-	
+
 	username := r.FormValue("username")
-	
+
 	if !checkUserExist(username) {
 		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
 		return
 	}
-	
+
 	if !hasMFA(username) {
 		http.Error(w, `{"error":"MFA not configured for this user"}`, http.StatusNotFound)
 		return
 	}
-	
+
 	mfaData, err := getMFAData(username)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
-	
+
 	mfaJSON, _ := json.Marshal(mfaData)
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "%s", mfaJSON)
