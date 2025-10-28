@@ -724,7 +724,14 @@ func (oAdmin *OvpnAdmin) renderClientConfig(username string) string {
 
 		for _, server := range *openvpnServer {
 			parts := strings.SplitN(server, ":", 3)
-			hosts = append(hosts, OpenvpnServer{Host: parts[0], Port: parts[1], Protocol: parts[2]})
+			protocol := "udp" // Default protocol
+			if len(parts) >= 3 {
+				protocol = parts[2]
+			} else if len(parts) < 2 {
+				log.Errorf("invalid server format: %s (expected HOST:PORT or HOST:PORT:PROTOCOL)", server)
+				continue
+			}
+			hosts = append(hosts, OpenvpnServer{Host: parts[0], Port: parts[1], Protocol: protocol})
 		}
 
 		if *openvpnServerBehindLB {
