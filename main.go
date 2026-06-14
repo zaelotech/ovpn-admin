@@ -1660,11 +1660,13 @@ func getOvpnServerHostsFromKubeApi() ([]OpenvpnServer, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		log.Errorf("%s", err.Error())
+		return nil, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Errorf("%s", err.Error())
+		return nil, err
 	}
 
 	for _, serviceName := range *openvpnServiceName {
